@@ -1,0 +1,46 @@
+/* リセットCSS */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* ボディのスタイル */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow: hidden;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* Canvasコンテナ */
+#canvas-container {
+    width: 100vw;
+    height: 100vh;
+}
+
+/* 情報パネル */
+.info {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    color: white;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 20px;
+    border-radius: 10px;
+    backdrop-filter: blur(10px);
+    font-size: 14px;
+    z-index: 100;
+}
+
+/* 情報パネルの見出し */
+.info h1 {
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+/* 情報パネルの段落 */
+.info p {
+    margin: 5px 0;
+    opacity: 0.9;
+}
+
