@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>A robot</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Dots&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/style/style.css">
 </head>
 <body>
@@ -12,10 +15,30 @@
         <h1>A Robot</h1>
         <p>Mouse Drag: Rotate View</p>
         <p>Scroll: Zoom</p>
-        <p>Arrow Keys: Move Robot (X, Z)</p>
+        <p>Arrow Keys: Move Robot</p>
         <p>W / Space: Rise Up</p>
         <p>S: Move Down</p>
+        <div class="start-button">
+            <button id="start-game-btn">Start Game</button>
+        </div>
     </div>
+
+    <!-- ゲームUI -->
+    <div id="game-ui" class="game-ui hidden">
+        <!-- カウントダウンタイマー -->
+        <div class="countdown-timer">
+            <div class="countdown-text">Time: <span id="time-display">10</span>s</div>
+            <div class="countdown-bar">
+                <div id="countdown-progress" class="countdown-progress"></div>
+            </div>
+        </div>
+        
+        <!-- ゲーム結果 -->
+        <div id="game-result" class="game-result hidden">
+            <div class="result-message"></div>
+        </div>
+    </div>
+
 
     <!-- Canvas コンテナ -->
     <div id="canvas-container"></div>

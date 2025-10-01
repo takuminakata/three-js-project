@@ -23,6 +23,26 @@ const robotRotationSpeed = 0.05; // ロボットの回転速度
 let wasMovingY = false; // 前フレームでY軸移動していたかどうか
 let lastYKeys = { W: false, S: false }; // 前フレームのY軸キーの状態
 
+// ゲーム関連の変数
+let gameState = 'idle'; // 'idle', 'playing', 'clear', 'failed'
+let targetBall = null; // ターゲットボール
+let gameTimer = null; // ゲームタイマー
+let countdownInterval = null; // カウントダウン用のインターバル
+let gameTimeLeft = 10; // 残り時間（秒）
+let gameStartTime = 0; // ゲーム開始時刻
+let ballRadius = 1.0; // ボールの半径
+let robotRadius = 1.5; // ロボットの当たり判定半径
+
+// マップの境界情報
+let mapBounds = {
+    minX: -15,
+    maxX: 15,
+    minZ: -15,
+    maxZ: 15,
+    minY: -2,
+    maxY: 8
+};
+
 // 滑らかな移動と回転のための変数
 let robotTargetPosition = new THREE.Vector3(); // 目標位置
 let robotTargetRotation = 0; // 目標回転角度
@@ -93,6 +113,9 @@ function init() {
     
     // キーボードイベントリスナーを追加
     setupKeyboardControls();
+    
+    // ゲームイベントリスナーを追加
+    setupGameControls();
 }
 
 /**
@@ -191,6 +214,9 @@ function loadGLTFModel() {
             // シーンに追加
             scene.add(gltfModel);
 
+            // マップの境界を計算
+            calculateMapBounds();
+
             console.log('GLTFモデルの読み込み完了！');
         },
         
@@ -283,6 +309,269 @@ function loadRobotModel() {
             console.error('ロボットモデルの読み込みエラー:', error);
         }
     );
+}
+
+/**
+ * ゲームコントロールの設定
+ */
+function setupGameControls() {
+    // スタートボタンのイベントリスナー
+    const startBtn = document.getElementById('start-game-btn');
+    
+    if (startBtn) {
+        startBtn.addEventListener('click', startGame);
+    }
+}
+
+/**
+ * ゲーム開始
+ */
+function startGame() {
+    if (gameState === 'playing') return;
+    
+    gameState = 'playing';
+    gameTimeLeft = 10;
+    gameStartTime = Date.now(); // ゲーム開始時刻を記録
+    
+    // UI更新
+    document.getElementById('game-ui').classList.remove('hidden');
+    document.getElementById('game-result').classList.add('hidden');
+    updateCountdownUI();
+    
+    // ランダムな位置にボールを生成
+    createTargetBall();
+    
+    // カウントダウン開始
+    startCountdown();
+    
+    console.log('ゲーム開始！');
+}
+
+
+/**
+ * マップの境界を計算
+ */
+function calculateMapBounds() {
+    if (!gltfModel) return;
+    
+    // マップ全体のバウンディングボックスを計算
+    const boundingBox = new THREE.Box3().setFromObject(gltfModel);
+    
+    // 境界を設定（少し余裕を持たせる）
+    const margin = 2;
+    mapBounds.minX = boundingBox.min.x + margin;
+    mapBounds.maxX = boundingBox.max.x - margin;
+    mapBounds.minZ = boundingBox.min.z + margin;
+    mapBounds.maxZ = boundingBox.max.z - margin;
+    mapBounds.minY = boundingBox.min.y + margin;
+    mapBounds.maxY = boundingBox.max.y + 3; // マップの上に少し余裕
+    
+    console.log('マップ境界:', mapBounds);
+}
+
+/**
+ * ターゲットボールを作成
+ */
+function createTargetBall() {
+    // 既存のボールを削除
+    if (targetBall) {
+        scene.remove(targetBall);
+    }
+    
+    // ロボットから適度な距離の位置を生成（マップ範囲内）
+    const robotPos = robotModel.position;
+    const minDistance = 5; // ロボットから最低5m離れた位置
+    const maxDistance = 12; // 最大12m離れた位置
+    
+    let ballPosition;
+    let attempts = 0;
+    const maxAttempts = 20;
+    
+    do {
+        // マップ範囲内でランダムな位置を生成
+        const x = mapBounds.minX + Math.random() * (mapBounds.maxX - mapBounds.minX);
+        const z = mapBounds.minZ + Math.random() * (mapBounds.maxZ - mapBounds.minZ);
+        const y = mapBounds.minY + Math.random() * (mapBounds.maxY - mapBounds.minY);
+        
+        ballPosition = new THREE.Vector3(x, y, z);
+        attempts++;
+    } while (
+        ballPosition.distanceTo(robotPos) < minDistance && 
+        attempts < maxAttempts
+    );
+    
+    // 最大試行回数に達した場合は、ロボットから最小距離の位置を強制設定
+    if (attempts >= maxAttempts) {
+        const direction = new THREE.Vector3(
+            Math.random() - 0.5,
+            0,
+            Math.random() - 0.5
+        ).normalize();
+        
+        ballPosition = robotPos.clone().add(direction.multiplyScalar(minDistance + 1));
+        
+        // マップ範囲内に収める
+        ballPosition.x = Math.max(mapBounds.minX, Math.min(mapBounds.maxX, ballPosition.x));
+        ballPosition.z = Math.max(mapBounds.minZ, Math.min(mapBounds.maxZ, ballPosition.z));
+        ballPosition.y = Math.max(mapBounds.minY, Math.min(mapBounds.maxY, ballPosition.y));
+    }
+    
+    // ボールのジオメトリとマテリアルを作成
+    const ballGeometry = new THREE.SphereGeometry(ballRadius, 32, 32);
+    const ballMaterial = new THREE.MeshPhongMaterial({
+        color: 0xffd700,
+        emissive: 0xffaa00,
+        emissiveIntensity: 0.3,
+        transparent: true,
+        opacity: 0.9,
+        shininess: 100
+    });
+    
+    targetBall = new THREE.Mesh(ballGeometry, ballMaterial);
+    targetBall.position.copy(ballPosition);
+    
+    // キラキラエフェクト用のユーザーデータ
+    targetBall.userData = {
+        originalY: ballPosition.y,
+        time: 0,
+        sparkles: []
+    };
+    
+    // パーティクルエフェクトを追加
+    createSparkleEffect(targetBall);
+    
+    scene.add(targetBall);
+    
+    console.log('ボール生成:', ballPosition);
+}
+
+/**
+ * キラキラエフェクトを作成
+ */
+function createSparkleEffect(ball) {
+    const sparkleCount = 20;
+    const sparkleGeometry = new THREE.SphereGeometry(0.05, 8, 8);
+    
+    for (let i = 0; i < sparkleCount; i++) {
+        const sparkleMaterial = new THREE.MeshBasicMaterial({
+            color: new THREE.Color().setHSL(Math.random(), 1, 0.8),
+            transparent: true,
+            opacity: 0.8
+        });
+        
+        const sparkle = new THREE.Mesh(sparkleGeometry, sparkleMaterial);
+        sparkle.position.set(
+            (Math.random() - 0.5) * 4,
+            (Math.random() - 0.5) * 4,
+            (Math.random() - 0.5) * 4
+        );
+        
+        sparkle.userData = {
+            originalPosition: sparkle.position.clone(),
+            speed: Math.random() * 0.02 + 0.01
+        };
+        
+        ball.userData.sparkles.push(sparkle);
+        ball.add(sparkle);
+    }
+}
+
+/**
+ * カウントダウン開始
+ */
+function startCountdown() {
+    updateCountdownUI();
+    
+    // より細かい間隔で更新（50msごと）
+    countdownInterval = setInterval(() => {
+        const elapsed = (Date.now() - gameStartTime) / 1000; // 経過時間（秒）
+        const remaining = Math.max(0, 10 - elapsed); // 残り時間
+        
+        // 残り時間が0以下になったらゲーム終了
+        if (remaining <= 0) {
+            endGame('failed');
+            return;
+        }
+        
+        // UI更新（滑らかな更新）
+        updateCountdownUI(remaining);
+    }, 50); // 50msごとに更新
+}
+
+/**
+ * カウントダウンUI更新
+ */
+function updateCountdownUI(remainingTime = null) {
+    const timeDisplay = document.getElementById('time-display');
+    const progressBar = document.getElementById('countdown-progress');
+    
+    // 引数が渡されていない場合は現在の残り時間を使用
+    const displayTime = remainingTime !== null ? remainingTime : gameTimeLeft;
+    
+    if (timeDisplay) {
+        // 整数秒で表示（例: 8秒）
+        timeDisplay.textContent = Math.ceil(displayTime);
+    }
+    
+    if (progressBar) {
+        const progress = (displayTime / 10) * 100;
+        progressBar.style.width = `${progress}%`;
+        
+        // 色を時間に応じて変更（滑らかな色変化）
+        if (displayTime <= 3) {
+            progressBar.style.background = 'linear-gradient(90deg, #ef4444, #dc2626)';
+        } else if (displayTime <= 6) {
+            progressBar.style.background = 'linear-gradient(90deg, #f59e0b, #d97706)';
+        } else {
+            progressBar.style.background = 'linear-gradient(90deg, #4ade80, #22c55e)';
+        }
+    }
+}
+
+/**
+ * ゲーム終了
+ */
+function endGame(result) {
+    if (gameState !== 'playing') return;
+    
+    gameState = result;
+    
+    // タイマーをクリア
+    if (countdownInterval) {
+        clearInterval(countdownInterval);
+        countdownInterval = null;
+    }
+    
+    // ボールを削除
+    if (targetBall) {
+        scene.remove(targetBall);
+        targetBall = null;
+    }
+    
+    // 結果表示
+    const gameResult = document.getElementById('game-result');
+    const resultMessage = document.querySelector('.result-message');
+    
+    gameResult.classList.remove('hidden');
+    resultMessage.classList.remove('clear', 'failed');
+    resultMessage.classList.add(result);
+    
+    if (result === 'clear') {
+        resultMessage.textContent = 'CLEAR!';
+    } else {
+        resultMessage.textContent = 'FAILED...';
+    }
+    
+    // 3秒後に結果とカウントダウンタイマーを自動消去
+    setTimeout(() => {
+        gameResult.classList.add('hidden');
+        // カウントダウンタイマーも非表示にする
+        document.getElementById('game-ui').classList.add('hidden');
+        // ゲーム状態をリセットして新しいゲームを開始可能にする
+        gameState = 'idle';
+    }, 3000);
+    
+    console.log('ゲーム終了:', result);
 }
 
 /**
@@ -456,12 +745,21 @@ function animate() {
             const floatSpeed = 0.001;
             const floatOffset = Math.sin(Date.now() * floatSpeed) * floatAmplitude;
             
-            // 浮遊アニメーションを現在の位置に追加（上書きではなく追加）
+            // 浮遊アニメーションを現在の位置に追加
             robotModel.position.y = robotModel.userData.baseY + floatOffset;
         }
         
         // 現在のY軸移動状態を記録
         wasMovingY = isMovingY;
+    }
+
+    // ゲーム中の処理
+    if (gameState === 'playing') {
+        // ボールのキラキラエフェクト更新
+        updateBallEffects();
+        
+        // 接触判定
+        checkCollision();
     }
 
     // カメラ位置を定期的にコンソールに表示
@@ -492,6 +790,57 @@ function onWindowResize() {
 
     // レンダラーのサイズを更新
     renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+/**
+ * ボールのエフェクト更新
+ */
+function updateBallEffects() {
+    if (!targetBall || !targetBall.userData) return;
+    
+    const time = Date.now() * 0.001;
+    targetBall.userData.time = time;
+    
+    // ボールの上下浮遊
+    const floatAmplitude = 0.3;
+    const floatSpeed = 2.0;
+    targetBall.position.y = targetBall.userData.originalY + Math.sin(time * floatSpeed) * floatAmplitude;
+    
+    // ボールの回転
+    targetBall.rotation.x += 0.01;
+    targetBall.rotation.y += 0.015;
+    
+    // キラキラパーティクルの更新
+    targetBall.userData.sparkles.forEach((sparkle, index) => {
+        sparkle.position.copy(sparkle.userData.originalPosition);
+        
+        // 円形に回転
+        const angle = time * sparkle.userData.speed + index * 0.5;
+        sparkle.position.x += Math.cos(angle) * 2;
+        sparkle.position.z += Math.sin(angle) * 2;
+        sparkle.position.y += Math.sin(time * 3 + index) * 0.5;
+        
+        // 透明度の変化
+        sparkle.material.opacity = 0.5 + Math.sin(time * 4 + index) * 0.3;
+        
+        // 色の変化
+        const hue = (time * 0.1 + index * 0.1) % 1;
+        sparkle.material.color.setHSL(hue, 1, 0.8);
+    });
+}
+
+/**
+ * 接触判定
+ */
+function checkCollision() {
+    if (!robotModel || !targetBall) return;
+    
+    const distance = robotModel.position.distanceTo(targetBall.position);
+    const collisionDistance = robotRadius + ballRadius;
+    
+    if (distance < collisionDistance) {
+        endGame('clear');
+    }
 }
 
 // 初期化とアニメーション開始
