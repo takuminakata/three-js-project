@@ -158,7 +158,7 @@ function loadmapModel() {
     // モデルを読み込む
     loader.load(
         // モデルのパス
-        '/models/luni_sul_mignone_1300ac_rawscan_gltf/scene.gltf',
+        './models/luni_sul_mignone_1300ac_rawscan_gltf/scene.gltf',
         
         // 読み込み成功時のコールバック
         function (gltf) {
@@ -246,7 +246,7 @@ function loadRobotModel() {
     // モデルを読み込む
     loader.load(
         // ロボットモデルのパス
-        '/models/cute_robot_gltf/scene.gltf',
+        './models/cute_robot_gltf/scene.gltf',
         
         // 読み込み成功時のコールバック
         function (gltf) {
