@@ -14,7 +14,7 @@ html, body {
 
 /* ボディのスタイル */
 body {
-    font-family: 'Zen Dots', cursive;
+    font-family: 'Noto Sans JP', sans-serif;
     background: linear-gradient(135deg, #1e3c72 0%, #2a5298 25%, #667eea 50%, #764ba2 75%, #f093fb 100%);
     background-size: 400% 400%;
     animation: gradientShift 15s ease infinite;
@@ -93,7 +93,7 @@ body {
 }
 
 .start-button button {
-    font-family: 'Zen Dots', cursive;
+    font-family: 'Noto Sans JP', sans-serif;
     padding: 12px 24px;
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(15px);

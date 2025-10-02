@@ -4,7 +4,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 // シーン、カメラ、レンダラーの初期化
 let scene, camera, renderer, controls;
-let gltfModel; // GLTFモデル用の変数（マップ）
+let mapModel; // GLTFモデル用の変数（マップ）
 let robotModel; // ロボットモデル用の変数
 
 // カメラ位置の表示用
@@ -103,7 +103,7 @@ function init() {
     addLights();
 
     // GLTFモデルの読み込み
-    loadGLTFModel();
+    loadmapModel();
     
     // ロボットモデルの読み込み
     loadRobotModel();
@@ -146,9 +146,9 @@ function addLights() {
 }
 
 /**
- * GLTFモデルを読み込む関数
+ * mapモデルを読み込む関数
  */
-function loadGLTFModel() {
+function loadmapModel() {
     // GLTFローダーのインスタンスを作成
     const loader = new GLTFLoader();
 
@@ -162,32 +162,32 @@ function loadGLTFModel() {
         
         // 読み込み成功時のコールバック
         function (gltf) {
-            gltfModel = gltf.scene;
+            mapModel = gltf.scene;
 
             // モデルのスケール調整（マップを大きく表示）
-            const box = new THREE.Box3().setFromObject(gltfModel);
+            const box = new THREE.Box3().setFromObject(mapModel);
             const size = box.getSize(new THREE.Vector3());
             const maxDim = Math.max(size.x, size.y, size.z);
             const scale = 30 / maxDim; // マップを大きく表示
-            gltfModel.scale.setScalar(scale);
+            mapModel.scale.setScalar(scale);
 
             // モデルの中心を原点に合わせる
             const center = box.getCenter(new THREE.Vector3());
-            gltfModel.position.x = -center.x * scale;
-            gltfModel.position.y = -center.y * scale;
-            gltfModel.position.z = -center.z * scale;
+            mapModel.position.x = -center.x * scale;
+            mapModel.position.y = -center.y * scale;
+            mapModel.position.z = -center.z * scale;
 
             // マップを270°（-90°）回転（上下の向きを調整）
-            gltfModel.rotation.x = -Math.PI / 2; // -90度回転
+            mapModel.rotation.x = -Math.PI / 2; // -90度回転
 
             // 回転後のバウンディングボックスを再計算
-            const rotatedBox = new THREE.Box3().setFromObject(gltfModel);
+            const rotatedBox = new THREE.Box3().setFromObject(mapModel);
             const rotatedSize = rotatedBox.getSize(new THREE.Vector3());
             const rotatedMin = rotatedBox.min;
             
             // マップの底面を床（y = -2）に合わせる
             const floorY = -2;
-            gltfModel.position.y = floorY - rotatedMin.y;
+            mapModel.position.y = floorY - rotatedMin.y;
 
             // カメラを指定位置に配置
             camera.position.set(
@@ -204,7 +204,7 @@ function loadGLTFModel() {
             controls.update();
 
             // 影の設定
-            gltfModel.traverse((child) => {
+            mapModel.traverse((child) => {
                 if (child.isMesh) {
                     child.castShadow = true;
                     child.receiveShadow = true;
@@ -212,7 +212,7 @@ function loadGLTFModel() {
             });
 
             // シーンに追加
-            scene.add(gltfModel);
+            scene.add(mapModel);
 
             // マップの境界を計算
             calculateMapBounds();
@@ -352,10 +352,10 @@ function startGame() {
  * マップの境界を計算
  */
 function calculateMapBounds() {
-    if (!gltfModel) return;
+    if (!mapModel) return;
     
     // マップ全体のバウンディングボックスを計算
-    const boundingBox = new THREE.Box3().setFromObject(gltfModel);
+    const boundingBox = new THREE.Box3().setFromObject(mapModel);
     
     // 境界を設定（少し余裕を持たせる）
     const margin = 2;
