@@ -1,59 +1,71 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>A robot</title>
     <!-- Three.js CDN -->
     <script type="importmap">
-    {
+      {
         "imports": {
-            "three": "https://unpkg.com/three@0.168.0/build/three.module.js",
-            "three/addons/": "https://unpkg.com/three@0.168.0/examples/jsm/"
+          "three": "https://unpkg.com/three@0.168.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.168.0/examples/jsm/",
+          "three-mesh-bvh": "https://unpkg.com/three-mesh-bvh@0.9.15/build/index.module.js"
         }
-    }
+      }
     </script>
-    <!-- <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&display=swap" rel="stylesheet"> -->
-    <link rel="stylesheet" href="./style/style.css">
-</head>
-<body>
+    <link rel="stylesheet" href="./style/style.css" />
+  </head>
+  <body>
+    <!-- ローディング画面 -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Loading 3D models...</div>
+    </div>
+
     <!-- 情報パネル -->
     <div class="info">
-        <h1>A Robot</h1>
-        <p>Mouse Drag: Rotate View</p>
-        <p>Scroll: Zoom</p>
-        <p>Arrow Keys: Move Robot</p>
-        <p>W / Space: Rise Up</p>
-        <p>S: Move Down</p>
-        <div class="start-button">
-            <button id="start-game-btn">Start Game</button>
-        </div>
+      <h1>A Robot</h1>
+      <p>Mouse Drag: Rotate View</p>
+      <p>Scroll: Zoom</p>
+      <p>Arrow Keys: Move Robot</p>
+      <p>W / Space: Rise Up</p>
+      <p>S: Move Down</p>
+      <p>` : Toggle Debug</p>
+      <div class="start-button">
+        <button id="start-game-btn">Start Game</button>
+        <button id="debug-toggle-btn">Debug</button>
+      </div>
+    </div>
+
+    <!-- デバッグパネル -->
+    <div id="debug-panel" class="debug-panel hidden">
+      <div class="debug-title">DEBUG</div>
+      <pre id="debug-coords" class="debug-coords"></pre>
     </div>
 
     <!-- ゲームUI -->
     <div id="game-ui" class="game-ui hidden">
-        <!-- カウントダウンタイマー -->
-        <div class="countdown-timer">
-            <div class="countdown-text">Time: <span id="time-display">10</span>s</div>
-            <div class="countdown-bar">
-                <div id="countdown-progress" class="countdown-progress"></div>
-            </div>
+      <!-- カウントダウンタイマー -->
+      <div class="countdown-timer">
+        <div class="countdown-text">
+          Time: <span id="time-display">10</span>s
         </div>
-        
-        <!-- ゲーム結果 -->
-        <div id="game-result" class="game-result hidden">
-            <div class="result-message"></div>
+        <div class="countdown-bar">
+          <div id="countdown-progress" class="countdown-progress"></div>
         </div>
-    </div>
+      </div>
 
+      <!-- ゲーム結果 -->
+      <div id="game-result" class="game-result hidden">
+        <div class="result-message"></div>
+      </div>
+    </div>
 
     <!-- Canvas コンテナ -->
     <div id="canvas-container"></div>
 
     <!-- メインスクリプト -->
     <script type="module" src="./src/main.js"></script>
-</body>
+  </body>
 </html>
-
